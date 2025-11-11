@@ -1,21 +1,21 @@
-import Image from "next/image";
+import Navbar from "./components/landing/Navbar";
+import Hero from "./components/landing/Hero";
+import HowItWorks from "./components/landing/HowItWorks";
+import Features from "./components/landing/Features";
+import Benefits from "./components/landing/Benefits";
+import Pricing from "./components/landing/Pricing";
+import Footer from "./components/landing/Footer";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-     <main>
-      <h1>Keep Learning</h1>
-     </main>
-     <footer>
-      <p>Copyright 2025 Keep Learning</p>
-     </footer>
-     <nav>
-      <ul>
-        <li><a href="/">Home</a></li>
-        <li><a href="/about">About</a></li>
-        <li><a href="/contact">Contact</a></li>
-      </ul>
-     </nav>
+    <div className="bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 min-h-screen">
+      <Navbar />
+      <Hero/>
+      <HowItWorks />
+      <Features />
+      <Benefits />
+      <Pricing />
+      <Footer />
     </div>
   );
 }
