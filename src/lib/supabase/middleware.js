@@ -1,36 +1,43 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse } from 'next/server'
 
-function ensureEnv(name) {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
+export async function updateSession(request) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Supabase env variables not found in middleware')
+    return NextResponse.next({
+      request,
+    })
   }
-  return value;
-}
 
-export function createMiddlewareSupabaseClient(request, response) {
-  return createServerClient(
-    ensureEnv("NEXT_PUBLIC_SUPABASE_URL"),
-    ensureEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+  let supabaseResponse = NextResponse.next({
+    request,
+  })
+
+  const supabase = createServerClient(
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
-        get(name) {
-          return request.cookies.get(name)?.value;
+        getAll() {
+          return request.cookies.getAll()
         },
-        set(name, value, options) {
-          response.cookies.set({ name, value, ...options });
-        },
-        remove(name, options) {
-          response.cookies.set({
-            name,
-            value: "",
-            ...options,
-            maxAge: 0,
-          });
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({
+            request,
+          })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
         },
       },
     }
-  );
+  )
+
+  await supabase.auth.getUser()
+
+  return supabaseResponse
 }
-
-
