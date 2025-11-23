@@ -1,46 +1,40 @@
-
 import { create } from 'zustand';
 import { StoreState, Subject, Book } from './types';
-
-const initialSubjects: Subject[] = [
-  {
-    id: '1',
-    name: 'Tushar Karan',
-    color: '#fbbf24', // Amber/Yellow
-    bookCount: 0,
-    isActive: true,
-    progress: 0,
-    recentBooks: []
-  },
-  {
-    id: '2',
-    name: 'er',
-    color: '#d8b4fe', // Light Purple
-    bookCount: 2,
-    isActive: true,
-    progress: 0,
-    recentBooks: [
-      { id: 'b1', title: 'hi', color: '#4ade80' }, // Green icon
-      { id: 'b2', title: 'or', color: '#f87171' }  // Red icon
-    ]
-  }
-];
 
 const BOOK_COLORS = ['#fbbf24', '#4ade80', '#f87171', '#60a5fa', '#c084fc', '#fb7185'];
 
 export const useStore = create<StoreState>((set) => ({
   stats: {
-    subjects: 2,
-    totalBooks: 2,
+    subjects: 0,
+    totalBooks: 0,
     completed: 0,
     progress: 0,
   },
-  subjects: initialSubjects,
+  subjects: [], // Start empty, wait for DB fetch
   activeBook: null,
   
+  // --- NEW ACTION: Set all subjects from DB ---
+  setSubjects: (subjects) => set((state) => {
+    // Recalculate stats based on the fetched data
+    const totalSubjects = subjects.length;
+    const totalBooks = subjects.reduce((acc, sub) => acc + (sub.bookCount || 0), 0);
+
+    return {
+      subjects,
+      stats: {
+        ...state.stats,
+        subjects: totalSubjects,
+        totalBooks: totalBooks
+      }
+    };
+  }),
+
   addSubject: (newSubjectData) => set((state) => {
+    // FIX: Use the ID provided by DB, or fallback to random if not provided
+    const id = (newSubjectData as any).id || Math.random().toString(36).substring(2, 9);
+
     const newSubject: Subject = {
-      id: Math.random().toString(36).substring(2, 9),
+      id: id,
       name: newSubjectData.name,
       description: newSubjectData.description,
       color: newSubjectData.color,
@@ -84,13 +78,18 @@ export const useStore = create<StoreState>((set) => ({
   addBook: (subjectId, bookDetails) => set((state) => {
     const randomColor = BOOK_COLORS[Math.floor(Math.random() * BOOK_COLORS.length)];
     
+    // FIX: Use the ID provided by DB
+    const id = (bookDetails as any).id || Math.random().toString(36).substring(2, 9);
+
     const newBook: Book = {
-      id: Math.random().toString(36).substring(2, 9),
+      id: id,
       title: bookDetails.title,
       author: bookDetails.author,
       description: bookDetails.description,
       color: randomColor,
-      file: bookDetails.file
+      file: bookDetails.file,
+      // @ts-ignore - You should add fileUrl to your Book type
+      fileUrl: (bookDetails as any).fileUrl 
     };
 
     const updatedSubjects = state.subjects.map(sub => {
