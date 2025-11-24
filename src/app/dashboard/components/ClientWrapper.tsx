@@ -12,11 +12,12 @@ interface ClientWrapperProps {
 export const ClientWrapper: React.FC<ClientWrapperProps> = ({ user }) => {
   const { activeBook, setActiveBook } = useStore();
 
-  // Render Book Page if a book is active (Full Screen Mode)
+  // Render Book Page if a book is active
   if (activeBook) {
-    return <BookPage book={activeBook} onBack={() => setActiveBook(null)} />;
+    // 👇 UPDATED: Added user={user} here
+    return <BookPage book={activeBook} user={user} onBack={() => setActiveBook(null)} />;
   }
 
-  // Render Dashboard with the Sidebar integration
+  // Render Dashboard
   return <Dashboard user={user} />;
 };

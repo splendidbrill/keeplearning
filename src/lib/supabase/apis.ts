@@ -1,11 +1,11 @@
 import { createClient } from './client';
-import { Subject, Book } from '@/app/dashboard/types';
+import { Subject, Book } from '@/Dashboard/types'; // Adjust path to your types
 
 const supabase = createClient();
 
 // --- SUBJECTS ---
 
-export const fetchUserData = async (): Promise<Subject[]> => {
+export const fetchUserData = async () => {
   // Fetch subjects AND their related books in one query
   const { data, error } = await supabase
     .from('subjects')

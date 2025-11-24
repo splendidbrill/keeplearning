@@ -3,7 +3,7 @@
 // import { createClient } from "@/lib/supabase/client";
 // import { useRouter } from "next/navigation";
 // import { User } from "@supabase/supabase-js";
-// import { Sidebar } from "@/app/dashboard/components/Sidebar"; // Adjust path to your Sidebar
+// import { Sidebar } from "@/Dashboard/components/Sidebar"; // Adjust path to your Sidebar
 // import { 
 //   User as UserIcon, 
 //   MapPin, 
@@ -271,7 +271,7 @@ import React, { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { User } from "@supabase/supabase-js";
-import { Sidebar } from "@/app/dashboard/components/Sidebar";
+import { Sidebar } from "@/app/Dashboard/components/Sidebar";
 import { 
   User as UserIcon, 
   MapPin, 

@@ -11,7 +11,7 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { Subject, Book as BookType } from '../types';
 import { Sidebar } from './Sidebar'; 
 import { User } from '@supabase/supabase-js';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '../../../lib/supabase/client';
 
 interface DashboardProps {
   user: User;
@@ -30,7 +30,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     updateBook, 
     deleteBook, 
     setActiveBook,
-    // @ts-ignore - Ensure setSubjects is added to your store.ts
+    // @ts-ignore - Ensure setSubjects is in your store.ts
     setSubjects 
   } = useStore();
   
@@ -38,7 +38,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   
-  const [bookModalState, setBookModalState] = useState<{ isOpen: boolean; subjectId: string | null; editBook?: BookType | null }>({
+  // State to manage the Book Modal
+  const [bookModalState, setBookModalState] = useState<{ 
+    isOpen: boolean; 
+    subjectId: string | null; 
+    editBook?: BookType | null 
+  }>({
     isOpen: false,
     subjectId: null,
     editBook: null
@@ -100,10 +105,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     fetchData();
   }, [user, supabase, setSubjects]);
 
-  // --- 2. Subject Handlers (Async) ---
+  // --- 2. Subject Handlers (DB + UI) ---
   const handleAddSubject = async (data: { name: string; color: string; description: string }) => {
     if (editingSubject) {
-      // Update Logic
+      // Update Subject in DB
       const { error } = await supabase
         .from('subjects')
         .update({ name: data.name, color: data.color, description: data.description })
@@ -114,7 +119,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         setEditingSubject(null);
       }
     } else {
-      // Create Logic
+      // Create Subject in DB
       const { data: newSubject, error } = await supabase
         .from('subjects')
         .insert([{ ...data, user_id: user.id }])
@@ -148,7 +153,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     }
   };
 
-  // --- 3. Book Handlers (Async) ---
+  // --- 3. Book Handlers ---
   const handleAddBookClick = (subjectId: string) => {
     setBookModalState({ isOpen: true, subjectId, editBook: null });
   };
@@ -157,63 +162,49 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     setBookModalState({ isOpen: true, subjectId, editBook: book });
   };
 
-  const handleSaveBook = async (data: { title: string; author: string; description: string; file: File | null }) => {
+  // UPDATED: This now receives a full Book object from the Modal (which handled the DB save)
+  // const handleBookSaved = (book: BookType) => {
+  //   const { subjectId, editBook } = bookModalState;
+    
+  //   if (!subjectId) return;
+
+  //   if (editBook) {
+  //     // Update UI store
+  //     updateBook(subjectId, book.id, {
+  //       title: book.title,
+  //       author: book.author || '',
+  //       description: book.description || '',
+  //       file: book.file
+  //     });
+  //   } else {
+  //     // Add to UI store
+  //     addBook(subjectId, book);
+  //   }
+    
+  //   // Close Modal
+  //   setBookModalState({ isOpen: false, subjectId: null, editBook: null });
+  // };
+
+  const handleBookSaved = (book: BookType) => {
     const { subjectId, editBook } = bookModalState;
     
     if (!subjectId) return;
 
     if (editBook) {
-      // Update Book Logic
-      const { error } = await supabase
-        .from('books')
-        .update({ 
-          title: data.title, 
-          author: data.author, 
-          description: data.description 
-        })
-        .eq('id', editBook.id);
-
-      if (!error) {
-        updateBook(subjectId, editBook.id, data);
-      }
+      // Update UI store
+      updateBook(subjectId, book.id, {
+        title: book.title,
+        author: book.author || '',
+        description: book.description || '',
+        file: book.file || null,      // Pass the file (optional)
+        fileUrl: book.fileUrl || null // Pass the URL (from DB)
+      });
     } else {
-      // Create Book Logic
-      let fileUrl = null;
-      
-      // Upload File if exists
-      if (data.file) {
-        const fileName = `${user.id}/${Date.now()}_${data.file.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from('book-files')
-          .upload(fileName, data.file);
-          
-        if (!uploadError) {
-          const { data: urlData } = supabase.storage.from('book-files').getPublicUrl(fileName);
-          fileUrl = urlData.publicUrl;
-        }
-      }
-
-      const { data: newBook, error } = await supabase
-        .from('books')
-        .insert([{
-          subject_id: subjectId,
-          user_id: user.id,
-          title: data.title,
-          author: data.author,
-          description: data.description,
-          file_url: fileUrl
-        }])
-        .select()
-        .single();
-
-      if (!error && newBook) {
-        addBook(subjectId, {
-          ...data,
-          id: newBook.id,
-          fileUrl: fileUrl
-        } as any);
-      }
+      // Add to UI store
+      addBook(subjectId, book);
     }
+    
+    // Close Modal
     setBookModalState({ isOpen: false, subjectId: null, editBook: null });
   };
 
@@ -231,7 +222,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     }
   };
 
-  // --- 4. Confirm Delete (Async) ---
+  // --- 4. Confirm Delete ---
   const handleConfirmDelete = async () => {
     if (deleteConfirm.type === 'subject' && deleteConfirm.id) {
       const { error } = await supabase.from('subjects').delete().eq('id', deleteConfirm.id);
@@ -392,11 +383,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             initialData={editingSubject}
           />
 
+          {/* UPDATED: Passed required props */}
           <AddBookModal
             isOpen={bookModalState.isOpen}
             onClose={() => setBookModalState({ ...bookModalState, isOpen: false })}
             subjectName={addingBookSubjectName}
-            onAdd={handleSaveBook}
+            
+            // Props for DB & n8n
+            subjectId={bookModalState.subjectId || ''}
+            user={user}
+            
+            onAdd={handleBookSaved} // Uses the new simplified handler
             initialData={bookModalState.editBook}
           />
 
