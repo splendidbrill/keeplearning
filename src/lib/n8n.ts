@@ -3,7 +3,7 @@
 // 🚨 REPLACE with your actual Production URLs from n8n (Webhook Node -> Production URL tab)
 const N8N_URLS = {
     ingest: "http://localhost:5678/webhook-test/ingest-book", 
-    tutor: "http://localhost:5678/webhook/ai-tutor"
+    tutor: "http://localhost:5678/webhook-test/ai-tutor" 
   };
   
   export const ingestBook = async (bookId: string, fileUrl: string, userId: string) => {
@@ -24,7 +24,8 @@ const N8N_URLS = {
   
   export const askAiTutor = async (bookId: string, query: string, userId: string) => {
     try {
-      const response = await fetch(N8N_URLS.tutor, {
+      // Call our internal Next.js API route instead of n8n directly
+      const response = await fetch("/api/chat", { 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookId, query, userId }),
@@ -32,9 +33,9 @@ const N8N_URLS = {
   
       if (!response.ok) throw new Error("AI Tutor failed to respond");
       
-      return await response.json(); // Returns { reply: "..." }
+      return await response.json();
     } catch (error) {
       console.error("AI Error:", error);
-      return { reply: "I'm having trouble connecting to the brain right now. Try again!" };
+      return { reply: "I'm having trouble connecting. Please ensure n8n is running!" };
     }
   };
